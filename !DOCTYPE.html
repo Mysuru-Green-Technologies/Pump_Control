@@ -10,33 +10,38 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
+    // Your web app's Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBRt3Jbs_pZRX29DyWYs4A8pMDoMLlAaHo",
       authDomain: "automated-pump-a4451.firebaseapp.com",
       databaseURL: "https://automated-pump-a4451-default-rtdb.firebaseio.com",
       projectId: "automated-pump-a4451",
-      storageBucket: "automated-pump-a4451.firebasestorage.app",
+      storageBucket: "automated-pump-a4451.appspot.com",
       messagingSenderId: "743547158435",
       appId: "1:743547158435:web:11fb7cfca70d4a27906416",
       measurementId: "G-1W4LY6XR3N"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    // Function to toggle pump status
     function togglePump() {
-      let switchElement = document.getElementById("switch");
-      let switchBox = document.querySelector(".switch-box");
-      let isOn = switchElement.classList.contains("on");
-      let newStatus = isOn ? "OFF" : "ON";
-      let timestamp = Date.now();
+      const switchElement = document.getElementById("switch");
+      const switchBox = document.querySelector(".switch-box");
+      const isOn = switchElement.classList.contains("on");
+      const newStatus = isOn ? "OFF" : "ON";
+      const timestamp = Date.now();
 
+      // Update UI
       switchElement.classList.toggle("on");
       switchBox.classList.toggle("on");
 
-      database.ref("/pumpStatus").set({ status: newStatus, timestamp: timestamp })
+      // Update Firebase
+      database.ref("/Pump1Control").set(newStatus)
         .then(() => {
-          console.log(`Pump status updated to: ${newStatus}`);
+          console.log(`Pump1Control updated to: ${newStatus}`);
           logPumpStatus(newStatus, timestamp);
         })
         .catch((error) => {
@@ -44,26 +49,27 @@
         });
     }
 
+    // Function to log pump status changes
     function logPumpStatus(status, timestamp) {
       database.ref("/pumpLogs").push({ status: status, timestamp: timestamp });
     }
 
+    // Function to update UI based on Firebase data
     function updateUI(snapshot) {
-      let switchElement = document.getElementById("switch");
-      let switchBox = document.querySelector(".switch-box");
-      if (snapshot.exists()) {
-        let status = snapshot.val().status;
-        if (status === "ON") {
-          switchElement.classList.add("on");
-          switchBox.classList.add("on");
-        } else {
-          switchElement.classList.remove("on");
-          switchBox.classList.remove("on");
-        }
+      const switchElement = document.getElementById("switch");
+      const switchBox = document.querySelector(".switch-box");
+      const status = snapshot.val();
+      if (status === "ON") {
+        switchElement.classList.add("on");
+        switchBox.classList.add("on");
+      } else {
+        switchElement.classList.remove("on");
+        switchBox.classList.remove("on");
       }
     }
 
-    database.ref("/pumpStatus").on("value", updateUI);
+    // Listen for changes in Pump1Control node
+    database.ref("/Pump1Control").on("value", updateUI);
   </script>
 
   <style>
