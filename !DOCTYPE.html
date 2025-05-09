@@ -60,21 +60,6 @@
       }
     }
 
-    function updatePumpStatusFromLogs() {
-      database.ref("/pumpLogs").orderByChild("timestamp").limitToLast(1).on("child_added", (snapshot) => {
-        const { status } = snapshot.val();
-        const indicator = document.getElementById("pump-indicator");
-
-        if (status === "ON") {
-          indicator.textContent = "Pump Status: ON";
-          indicator.style.color = "green";
-        } else {
-          indicator.textContent = "Pump Status: OFF";
-          indicator.style.color = "red";
-        }
-      });
-    }
-
     function loadLogTable() {
       const tableBody = document.getElementById("log-table-body");
       database.ref("/pumpLogs").orderByChild("timestamp").limitToLast(10).on("value", (snapshot) => {
@@ -103,7 +88,7 @@
 
     window.onload = function () {
       database.ref("/Pump1Control").once("value").then(updateControlUI);
-      updatePumpStatusFromLogs();
+      database.ref("/Pump1Control").on("value", updateControlUI);
       loadLogTable();
     };
   </script>
@@ -159,12 +144,6 @@
       left: 90px;
     }
 
-    #pump-indicator {
-      font-size: 1.2em;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-
     table {
       margin: 30px auto;
       width: 80%;
@@ -208,7 +187,6 @@
 <body>
   <img src="logo.png" alt="Company Logo" class="logo" />
   <h2>Pump Control</h2>
-  <p id="pump-indicator">Pump Status: Unknown</p>
 
   <div class="switch-container">
     <div class="switch-box" onclick="togglePump()">
