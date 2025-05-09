@@ -26,7 +26,7 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Function to toggle pump status
+    // Function to toggle pump control signal
     function togglePump() {
       const switchElement = document.getElementById("switch");
       const switchBox = document.querySelector(".switch-box");
@@ -34,11 +34,11 @@
       const newStatus = isOn ? "OFF" : "ON";
       const timestamp = Date.now();
 
-      // Update UI
+      // Update UI immediately
       switchElement.classList.toggle("on");
       switchBox.classList.toggle("on");
 
-      // Update Firebase
+      // Update Firebase control signal
       database.ref("/Pump1Control").set(newStatus)
         .then(() => {
           console.log(`Pump1Control updated to: ${newStatus}`);
@@ -49,13 +49,13 @@
         });
     }
 
-    // Function to log pump status changes
+    // Log pump status changes
     function logPumpStatus(status, timestamp) {
       database.ref("/pumpLogs").push({ status: status, timestamp: timestamp });
     }
 
-    // Function to update UI based on Firebase data
-    function updateUI(snapshot) {
+    // Update control switch UI from Firebase
+    function updateControlUI(snapshot) {
       const switchElement = document.getElementById("switch");
       const switchBox = document.querySelector(".switch-box");
       const status = snapshot.val();
@@ -68,8 +68,32 @@
       }
     }
 
-    // Listen for changes in Pump1Control node
-    database.ref("/Pump1Control").on("value", updateUI);
+    // Update status indicator from Firebase
+    function updatePumpStatusIndicator(snapshot) {
+      const status = snapshot.val();
+      const indicator = document.getElementById("pump-indicator");
+
+      if (status === "ON") {
+        indicator.textContent = "Pump Status: ON";
+        indicator.style.color = "green";
+      } else if (status === "OFF") {
+        indicator.textContent = "Pump Status: OFF";
+        indicator.style.color = "red";
+      } else {
+        indicator.textContent = "Pump Status: Unknown";
+        indicator.style.color = "gray";
+      }
+    }
+
+    // Firebase listeners
+    database.ref("/Pump1Control").on("value", updateControlUI);
+    database.ref("/Pump1Status").on("value", updatePumpStatusIndicator);
+
+    // Set initial UI state on load
+    window.onload = function () {
+      database.ref("/Pump1Control").once("value").then(updateControlUI);
+      database.ref("/Pump1Status").once("value").then(updatePumpStatusIndicator);
+    };
   </script>
 
   <style>
@@ -88,7 +112,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 63vh;
+      height: 50vh;
     }
 
     .switch-box {
@@ -122,11 +146,35 @@
     .switch.on {
       left: 90px;
     }
+
+    #pump-indicator {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 500px) {
+      .switch-box {
+        width: 120px;
+        height: 60px;
+      }
+
+      .switch {
+        width: 50px;
+        height: 50px;
+      }
+
+      .switch.on {
+        left: 65px;
+      }
+    }
   </style>
 </head>
 <body>
   <img src="logo.png" alt="Company Logo" class="logo" />
   <h2>Pump Control</h2>
+  <p id="pump-indicator">Pump Status: Unknown</p>
+
   <div class="switch-container">
     <div class="switch-box" onclick="togglePump()">
       <div id="switch" class="switch"></div>
