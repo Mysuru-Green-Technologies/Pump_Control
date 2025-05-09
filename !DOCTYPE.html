@@ -36,7 +36,6 @@
 
       database.ref("/Pump1Control").set(newStatus)
         .then(() => {
-          console.log(`Pump1Control updated to: ${newStatus}`);
           logPumpStatus(newStatus, timestamp);
         })
         .catch((error) => {
@@ -45,7 +44,7 @@
     }
 
     function logPumpStatus(status, timestamp) {
-      database.ref("/pumpLogs").push({ status: status, timestamp: timestamp });
+      database.ref("/pumpLogs").push({ status, timestamp });
     }
 
     function updateControlUI(snapshot) {
@@ -69,19 +68,43 @@
         if (status === "ON") {
           indicator.textContent = "Pump Status: ON";
           indicator.style.color = "green";
-        } else if (status === "OFF") {
+        } else {
           indicator.textContent = "Pump Status: OFF";
           indicator.style.color = "red";
-        } else {
-          indicator.textContent = "Pump Status: Unknown";
-          indicator.style.color = "gray";
         }
+      });
+    }
+
+    function loadLogTable() {
+      const tableBody = document.getElementById("log-table-body");
+      database.ref("/pumpLogs").orderByChild("timestamp").limitToLast(10).on("value", (snapshot) => {
+        tableBody.innerHTML = "";
+        const logs = [];
+
+        snapshot.forEach((child) => {
+          logs.push(child.val());
+        });
+
+        // Show most recent at top
+        logs.reverse().forEach(log => {
+          const tr = document.createElement("tr");
+          const statusTd = document.createElement("td");
+          const timeTd = document.createElement("td");
+
+          statusTd.textContent = log.status;
+          timeTd.textContent = new Date(log.timestamp).toLocaleString();
+
+          tr.appendChild(statusTd);
+          tr.appendChild(timeTd);
+          tableBody.appendChild(tr);
+        });
       });
     }
 
     window.onload = function () {
       database.ref("/Pump1Control").once("value").then(updateControlUI);
       updatePumpStatusFromLogs();
+      loadLogTable();
     };
   </script>
 
@@ -142,6 +165,24 @@
       margin-top: 20px;
     }
 
+    table {
+      margin: 30px auto;
+      width: 80%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px 20px;
+      border: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #4CAF50;
+      color: white;
+    }
+
     @media (max-width: 500px) {
       .switch-box {
         width: 120px;
@@ -156,6 +197,11 @@
       .switch.on {
         left: 65px;
       }
+
+      table {
+        width: 100%;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -169,5 +215,18 @@
       <div id="switch" class="switch"></div>
     </div>
   </div>
+
+  <h3>Recent Pump Logs</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody id="log-table-body">
+      <!-- Logs will be loaded here -->
+    </tbody>
+  </table>
 </body>
 </html>
